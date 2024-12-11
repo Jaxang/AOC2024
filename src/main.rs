@@ -3,6 +3,7 @@ use std::time::Instant;
 
 mod day1;
 mod day10;
+mod day11;
 mod day2;
 mod day3;
 mod day4;
@@ -32,6 +33,7 @@ fn main() {
         "day8" => day8::run("inputs/day8.txt").unwrap(),
         "day9" => day9::run("inputs/day9.txt").unwrap(),
         "day10" => day10::run("inputs/day10.txt").unwrap(),
+        "day11" => day11::run("inputs/day11.txt").unwrap(),
         _ => {
             eprintln!("Unknown day: {}", day);
             std::process::exit(1);
