@@ -7,6 +7,7 @@ mod day10;
 mod day11;
 mod day12;
 mod day16;
+mod day17;
 mod day2;
 mod day3;
 mod day4;
@@ -40,6 +41,7 @@ fn main() {
         "day11" => run_day(day11::run, "day11"),
         "day12" => run_day(day12::run, "day12"),
         "day16" => run_day(day16::run, "day16"),
+        "day17" => run_day(day17::run, "day17"),
         _ => {
             eprintln!("Unknown day: {}", day);
             std::process::exit(1);
@@ -63,6 +65,7 @@ fn run_all() {
     run_day(day11::run, "day11");
     run_day(day12::run, "day12");
     run_day(day16::run, "day16");
+    run_day(day17::run, "day17");
 }
 
 fn run_day(func: fn(&str) -> io::Result<()>, day: &str) {
