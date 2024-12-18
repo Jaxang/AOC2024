@@ -5,7 +5,7 @@ use std::time::Instant;
 mod day1;
 mod day10;
 mod day11;
-mod day12;
+mod day15;
 mod day16;
 mod day17;
 mod day18;
@@ -40,7 +40,7 @@ fn main() {
         "day9" => run_day(day9::run, "day9"),
         "day10" => run_day(day10::run, "day10"),
         "day11" => run_day(day11::run, "day11"),
-        "day12" => run_day(day12::run, "day12"),
+        "day15" => run_day(day15::run, "day15"),
         "day16" => run_day(day16::run, "day16"),
         "day17" => run_day(day17::run, "day17"),
         "day18" => run_day(day18::run, "day18"),
@@ -65,7 +65,7 @@ fn run_all() {
     run_day(day9::run, "day9");
     run_day(day10::run, "day10");
     run_day(day11::run, "day11");
-    run_day(day12::run, "day12");
+    run_day(day15::run, "day15");
     run_day(day16::run, "day16");
     run_day(day17::run, "day17");
     run_day(day18::run, "day18");

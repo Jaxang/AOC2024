@@ -6,7 +6,7 @@
             "request": "launch",
             "name": "Debug",
             "program": "${workspaceRoot}/target/debug/AoC_2024",
-            "args": [ "day17" ],
+            "args": [ "day15" ],
             "cwd": "${workspaceRoot}",
             "sourceLanguages": [
                 "rust"
