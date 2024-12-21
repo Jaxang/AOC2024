@@ -8,8 +8,8 @@ use std::path::Path;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 struct Pos {
-    x: i32,
-    y: i32,
+    x: i64,
+    y: i64,
 }
 
 static NUM_7: Pos = Pos { x: 0, y: 0 };
@@ -25,7 +25,6 @@ static NUM_E: Pos = Pos { x: 3, y: 0 };
 static NUM_0: Pos = Pos { x: 3, y: 1 };
 static NUM_A: Pos = Pos { x: 3, y: 2 };
 
-static DIR_E: Pos = Pos { x: 0, y: 0 };
 static DIR_U: Pos = Pos { x: 0, y: 1 };
 static DIR_A: Pos = Pos { x: 0, y: 2 };
 static DIR_L: Pos = Pos { x: 1, y: 0 };
@@ -49,118 +48,63 @@ pub fn run(filename: &str) -> io::Result<()> {
     Ok(())
 }
 
-fn star1(text_input: &[Vec<char>]) -> i32 {
-    let shortest_paths_num_pad = shortest_paths_num();
-    let shortest_paths_dir_pad = shortest_paths_dir();
-    let shortest_paths_all = shortest_paths();
-    //println!("Shortest paths num all\n{:?}", shortest_paths_all);
+fn star1(text_input: &[Vec<char>]) -> i64 {
+    solve(text_input, 2)
+}
+
+fn star2(text_input: &[Vec<char>]) -> i64 {
+    solve(text_input, 25)
+}
+
+fn solve(text_input: &[Vec<char>], intermediet_robots: usize) -> i64 {
+    let shortest_paths_all = shortest_paths(intermediet_robots);
 
     let positions = input_to_positions(text_input);
     let mut sum = 0;
     for (i, code) in positions.iter().enumerate() {
         let s: String = text_input[i][0..3].iter().collect();
-        println!("Code: {}A", s);
-        let code_value = s.parse::<i32>().unwrap();
-        println!("Code value: {}", code_value);
+        let code_value = s.parse::<i64>().unwrap();
 
         let cost_1 = shortest_paths_all.get(&(NUM_A, code[0])).unwrap();
         let cost_2 = shortest_paths_all.get(&(code[0], code[1])).unwrap();
         let cost_3 = shortest_paths_all.get(&(code[1], code[2])).unwrap();
         let cost_4 = shortest_paths_all.get(&(code[2], code[3])).unwrap();
         let path_cost = cost_1 + cost_2 + cost_3 + cost_4;
-        println!(
-            "Path cost: {} ({}, {}, {}, {})",
-            path_cost, cost_1, cost_2, cost_3, cost_4
-        );
 
         let complexity = code_value * path_cost;
-        println!("Complexity: {}", complexity);
         sum += complexity;
-
-        println!();
     }
     sum
 }
 
-fn star2(grid: &[Vec<char>]) -> i32 {
-    0
-}
-
-fn shortest_paths() -> HashMap<(Pos, Pos), i32> {
+fn shortest_paths(intermediet_robots: usize) -> HashMap<(Pos, Pos), i64> {
     let mut first_robot_cost = HashMap::new();
     for p in [DIR_A, DIR_D, DIR_L, DIR_R, DIR_U].iter() {
         shortest_path(*p, &DIR_GRID, &mut first_robot_cost);
     }
-    println!("First robot");
-    print_dir_dict(&first_robot_cost);
 
-    let mut second_robot_cost = HashMap::new();
-    for p in [DIR_A, DIR_D, DIR_L, DIR_R, DIR_U].iter() {
-        shortest_path_with_cost(*p, &DIR_GRID, &first_robot_cost, &mut second_robot_cost);
+    let mut previouse_cost = first_robot_cost.clone();
+    let mut next_cost = HashMap::new();
+    for _ in 0..intermediet_robots - 1 {
+        next_cost = HashMap::new();
+        for p in [DIR_A, DIR_D, DIR_L, DIR_R, DIR_U].iter() {
+            shortest_path_with_cost(*p, &DIR_GRID, &previouse_cost, &mut next_cost);
+        }
+        previouse_cost = next_cost.clone();
     }
 
-    println!("Second robot");
-    print_dir_dict(&second_robot_cost);
-
-    let mut third_robot_cost = HashMap::new();
+    let mut last_robot_cost = HashMap::new();
     for p in [
         NUM_3, NUM_A, NUM_7, NUM_8, NUM_9, NUM_4, NUM_5, NUM_6, NUM_1, NUM_2, NUM_0,
     ]
     .iter()
     {
-        shortest_path_with_cost(*p, &NUM_GRID, &second_robot_cost, &mut third_robot_cost);
+        shortest_path_with_cost(*p, &NUM_GRID, &next_cost, &mut last_robot_cost);
     }
-
-    println!("Third robot");
-    print_num_dict(&third_robot_cost);
-    third_robot_cost
+    last_robot_cost
 }
 
-fn shortest_paths_num() -> HashMap<(Pos, Pos), i32> {
-    let mut dist = HashMap::new();
-    for p in [
-        NUM_7, NUM_8, NUM_9, NUM_4, NUM_5, NUM_6, NUM_1, NUM_2, NUM_3, NUM_0, NUM_A,
-    ]
-    .iter()
-    {
-        shortest_path(*p, &NUM_GRID, &mut dist);
-    }
-
-    println!("Num Grid\n{:?}", NUM_GRID);
-    for p in [
-        NUM_7, NUM_8, NUM_9, NUM_4, NUM_5, NUM_6, NUM_1, NUM_2, NUM_3, NUM_0, NUM_A,
-    ]
-    .iter()
-    {
-        println!(
-            "A->{}: {}",
-            NUM_GRID[p.x as usize][p.y as usize],
-            dist.get(&(NUM_A, *p)).unwrap()
-        );
-    }
-    println!();
-    dist
-}
-
-fn shortest_paths_dir() -> HashMap<(Pos, Pos), i32> {
-    let mut dist = HashMap::new();
-    for p in [DIR_A, DIR_D, DIR_L, DIR_R, DIR_U].iter() {
-        shortest_path(*p, &DIR_GRID, &mut dist);
-    }
-
-    println!("Dir Grid\n{:?}", DIR_GRID);
-    for p in [DIR_A, DIR_D, DIR_L, DIR_R, DIR_U].iter() {
-        println!(
-            "^->{}: {}",
-            DIR_GRID[p.x as usize][p.y as usize],
-            dist.get(&(DIR_U, *p)).unwrap()
-        );
-    }
-    println!();
-    dist
-}
-
-fn shortest_path(end_pos: Pos, grid: &[[char; 3]], dist: &mut HashMap<(Pos, Pos), i32>) {
+fn shortest_path(end_pos: Pos, grid: &[[char; 3]], dist: &mut HashMap<(Pos, Pos), i64>) {
     let mut pq = PriorityQueue::new();
 
     pq.push((end_pos, 0), Reverse(0));
@@ -168,7 +112,7 @@ fn shortest_path(end_pos: Pos, grid: &[[char; 3]], dist: &mut HashMap<(Pos, Pos)
         let ((pos, steps), _) = pq.pop().unwrap();
         let (i, j) = (pos.x, pos.y);
 
-        if i < 0 || i >= grid.len() as i32 || j < 0 || j >= grid[0].len() as i32 {
+        if i < 0 || i >= grid.len() as i64 || j < 0 || j >= grid[0].len() as i64 {
             continue;
         }
         if grid[i as usize][j as usize] == 'E' {
@@ -189,8 +133,8 @@ fn shortest_path(end_pos: Pos, grid: &[[char; 3]], dist: &mut HashMap<(Pos, Pos)
 fn shortest_path_with_cost(
     start: Pos,
     grid: &[[char; 3]],
-    cost: &HashMap<(Pos, Pos), i32>,
-    dist: &mut HashMap<(Pos, Pos), i32>,
+    cost: &HashMap<(Pos, Pos), i64>,
+    dist: &mut HashMap<(Pos, Pos), i64>,
 ) {
     let mut pq = PriorityQueue::new();
     let mut visited = HashSet::new();
@@ -200,7 +144,7 @@ fn shortest_path_with_cost(
         let ((pos, controler_pos, done, steps), _) = pq.pop().unwrap();
         let (i, j) = (pos.x, pos.y);
 
-        if i < 0 || i >= grid.len() as i32 || j < 0 || j >= grid[0].len() as i32 {
+        if i < 0 || i >= grid.len() as i64 || j < 0 || j >= grid[0].len() as i64 {
             continue;
         }
         if grid[i as usize][j as usize] == 'E' {
@@ -244,29 +188,9 @@ fn shortest_path_with_cost(
     }
 }
 
-fn get_cost(action: Pos, controler_pos: Pos, cost: &HashMap<(Pos, Pos), i32>) -> i32 {
+fn get_cost(action: Pos, controler_pos: Pos, cost: &HashMap<(Pos, Pos), i64>) -> i64 {
     let move_cost = cost.get(&(controler_pos, action)).unwrap();
     *move_cost
-}
-
-fn print_dir_dict(dist: &HashMap<(Pos, Pos), i32>) {
-    for ((s, e), c) in dist.iter() {
-        println!("{}->{}: {}", dir_pos_to_char(*s), dir_pos_to_char(*e), c);
-    }
-}
-
-fn print_num_dict(dist: &HashMap<(Pos, Pos), i32>) {
-    for ((s, e), c) in dist.iter() {
-        println!("{}->{}: {}", num_pos_to_char(*s), num_pos_to_char(*e), c);
-    }
-}
-
-fn dir_pos_to_char(pos: Pos) -> char {
-    DIR_GRID[pos.x as usize][pos.y as usize]
-}
-
-fn num_pos_to_char(pos: Pos) -> char {
-    NUM_GRID[pos.x as usize][pos.y as usize]
 }
 
 fn input_to_positions(input: &[Vec<char>]) -> Vec<Vec<Pos>> {
