@@ -2,7 +2,6 @@ use std::convert::TryInto;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
-use std::process::Output;
 
 pub fn run(filename: &str) -> io::Result<()> {
     let (registers, program) = parse_input(filename);

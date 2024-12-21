@@ -111,19 +111,6 @@ fn get_nex_pos(pos: (usize, usize), move_type: char) -> (usize, usize) {
     }
 }
 
-fn print_grid(pos: (usize, usize), grid: &Vec<Vec<char>>) {
-    for (i, row) in grid.iter().enumerate() {
-        for (j, c) in row.iter().enumerate() {
-            if (i, j) == pos {
-                print!("@");
-            } else {
-                print!("{}", c);
-            }
-        }
-        println!();
-    }
-}
-
 fn upscale_grid(grid: &Vec<Vec<char>>) -> Vec<Vec<char>> {
     let mut output = Vec::new();
     for row in grid {
