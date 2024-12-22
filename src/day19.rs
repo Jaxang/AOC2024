@@ -1,87 +1,63 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn run(filename: &str) -> io::Result<()> {
     let (available_patterns, designs) = parse_input(filename);
-    test_code();
     println!("Star 1: {}", star1(&available_patterns, &designs));
     println!("Star 2: {}", star2(&available_patterns, &designs));
 
     Ok(())
 }
 
-fn test_code() {
-    let patterns: Vec<String> = Vec::from(["r", "wr", "b", "g", "bwu", "rb", "gb", "br"])
-        .iter()
-        .map(|&s| s.to_string())
-        .collect();
-    let filtered = filter_patterns(&patterns);
-    let expected: Vec<String> = Vec::from(["r", "b", "g", "wr", "bwu"])
-        .iter()
-        .map(|&s| s.to_string())
-        .collect();
-    assert!(filtered.len() == expected.len());
-    for i in expected {
-        assert!(filtered.contains(&i));
-    }
-
-    let designs = [
-        "brwrr".to_string(),
-        "bggr".to_string(),
-        "gbbr".to_string(),
-        "rrbgbr".to_string(),
-        "ubwu".to_string(),
-        "bwurrg".to_string(),
-        "brgr".to_string(),
-        "bbrgwb".to_string(),
-    ]
-    .to_vec();
-    assert!(basic_solve(&filtered, &designs) == 6);
-}
-
 fn star1(available_patterns: &[String], designs: &[String]) -> i64 {
-    basic_solve(available_patterns, designs)
+    count_solvable(available_patterns, designs)
 }
 
 fn star2(available_patterns: &[String], designs: &[String]) -> i64 {
-    0
+    count_all_solutions(available_patterns, designs)
 }
 
-fn filter_patterns(patterns: &[String]) -> Vec<String> {
-    let mut filtered_patterns = Vec::new();
-    let mut patterns_sorted = patterns.to_vec();
-    patterns_sorted.sort_by_key(|a| a.len());
-    for pattern in patterns_sorted {
-        if !basic_sub_pattern(&pattern, &filtered_patterns) {
-            filtered_patterns.push(pattern);
-        }
+fn basic_sub_pattern(design: &str, patterns: &[String], cache: &mut HashMap<String, i64>) -> i64 {
+    if design.is_empty() {
+        return 1;
     }
-    filtered_patterns
-}
-
-fn basic_sub_pattern(design: &str, available_patterns: &[String]) -> bool {
-    if design.len() == 0 {
-        return true;
+    if cache.contains_key(design) {
+        return cache[design];
     }
-    for pattern in available_patterns.iter() {
+    let mut matched_pattens = 0;
+    for (i, pattern) in patterns.iter().enumerate() {
         if design.starts_with(pattern) {
             let subdesign = &design[pattern.len()..design.len()];
-            if basic_sub_pattern(subdesign, available_patterns) {
-                return true;
+            let matches = basic_sub_pattern(subdesign, patterns, cache);
+            if matches == 0 {
+                continue;
             }
+            matched_pattens += matches;
         }
     }
-    false
+    cache.insert(design.to_string(), matched_pattens);
+    matched_pattens
 }
 
-fn basic_solve(available_patterns: &[String], designs: &[String]) -> i64 {
-    let filted_patterns = filter_patterns(available_patterns);
+fn count_solvable(available_patterns: &[String], designs: &[String]) -> i64 {
     let mut sum = 0;
+    let mut cache = HashMap::new();
     for design in designs {
-        if basic_sub_pattern(design, &filted_patterns) {
+        if basic_sub_pattern(design, available_patterns, &mut cache) > 0 {
             sum += 1;
+        }
+    }
+    sum
+}
+
+fn count_all_solutions(available_patterns: &[String], designs: &[String]) -> i64 {
+    let mut sum = 0;
+    let mut cache = HashMap::new();
+    for design in designs {
+        if basic_sub_pattern(design, available_patterns, &mut cache) > 0 {
+            sum += cache[design];
         }
     }
     sum
