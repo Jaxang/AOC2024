@@ -9,7 +9,7 @@ mod day15;
 mod day16;
 mod day17;
 mod day18;
-//mod day19;
+mod day19;
 mod day2;
 mod day20;
 mod day21;
@@ -48,7 +48,7 @@ fn main() {
         "day16" => run_day(day16::run, "day16"),
         "day17" => run_day(day17::run, "day17"),
         "day18" => run_day(day18::run, "day18"),
-        //"day19" => run_day(day19::run, "day19"),
+        "day19" => run_day(day19::run, "day19"),
         "day20" => run_day(day20::run, "day20"),
         "day21" => run_day(day21::run, "day21"),
         "day22" => run_day(day22::run, "day22"),
@@ -77,7 +77,7 @@ fn run_all() {
     run_day(day16::run, "day16");
     run_day(day17::run, "day17");
     run_day(day18::run, "day18");
-    //run_day(day19::run, "day19");
+    run_day(day19::run, "day19");
     run_day(day20::run, "day20");
     run_day(day21::run, "day21");
 }

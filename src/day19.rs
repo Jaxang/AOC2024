@@ -1,167 +1,74 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead};
 use std::path::Path;
 
 pub fn run(filename: &str) -> io::Result<()> {
     let (available_patterns, designs) = parse_input(filename);
+    test_code();
     println!("Star 1: {}", star1(&available_patterns, &designs));
     println!("Star 2: {}", star2(&available_patterns, &designs));
 
     Ok(())
 }
 
-fn star1(available_patterns: &[String], designs: &[String]) -> i64 {
-    let mut sum = 0;
-    let pat_counters: Vec<HashMap<char, i64>> = available_patterns
+fn test_code() {
+    let patterns: Vec<String> = Vec::from(["r", "wr", "b", "g", "bwu", "rb", "gb", "br"])
         .iter()
-        .map(|p| get_char_count(p))
+        .map(|&s| s.to_string())
         .collect();
-    for design in designs {
-        let counter = get_char_count(design);
-        println!("{}", design);
-        println!("{:?}", counter);
-
-        let tmp = HashMap::new();
-        let viable_pattern_combos =
-            build_possible_pattern_sets(0, &tmp.clone(), &counter, &pat_counters);
-        if viable_pattern_combos.is_none() {
-            println!("No possible pattern sets");
-            continue;
-        }
-        let pattern_sets = viable_pattern_combos.unwrap();
-        println!("{:?}", pattern_sets);
-        for (j, pattern_set) in pattern_sets.iter().enumerate() {
-            println!("Set {}", j);
-            for i in pattern_set {
-                print!("{}", available_patterns[*i]);
-            }
-            println!();
-        }
-        sum += 1;
-
-        // if is_design_possible(
-        //     design,
-        //     available_patterns,
-        //     &counter,
-        //     &pat_counters,
-        //     &mut pattern_viability,
-        // ) {
-        //     sum += 1;
-        // }
+    let filtered = filter_patterns(&patterns);
+    let expected: Vec<String> = Vec::from(["r", "b", "g", "wr", "bwu"])
+        .iter()
+        .map(|&s| s.to_string())
+        .collect();
+    assert!(filtered.len() == expected.len());
+    for i in expected {
+        assert!(filtered.contains(&i));
     }
-    sum
+
+    let designs = [
+        "brwrr".to_string(),
+        "bggr".to_string(),
+        "gbbr".to_string(),
+        "rrbgbr".to_string(),
+        "ubwu".to_string(),
+        "bwurrg".to_string(),
+        "brgr".to_string(),
+        "bbrgwb".to_string(),
+    ]
+    .to_vec();
+    assert!(basic_solve(&filtered, &designs) == 6);
+}
+
+fn star1(available_patterns: &[String], designs: &[String]) -> i64 {
+    basic_solve(available_patterns, designs)
 }
 
 fn star2(available_patterns: &[String], designs: &[String]) -> i64 {
     0
 }
 
-fn build_possible_pattern_sets(
-    idx: usize,
-    curr_char_count: &HashMap<char, i64>,
-    design_char_count: &HashMap<char, i64>,
-    pattern_char_count: &[HashMap<char, i64>],
-) -> Option<Vec<Vec<usize>>> {
-    //println!("{:?}", curr_char_count);
-    if curr_char_count == design_char_count {
-        return Some(vec![Vec::new(); 1]);
-    }
-    if pattern_char_count.is_empty() {
-        return None;
-    }
-
-    let pattern_counter = pattern_char_count.first()?;
-    let mut possible_patterns = Vec::new();
-    let mut new_char_count = curr_char_count.clone();
-    let mut participated = 0;
-    while check_if_pattern_viable(design_char_count, &new_char_count) {
-        let pattern_sets = build_possible_pattern_sets(
-            idx + 1,
-            &new_char_count,
-            design_char_count,
-            &pattern_char_count[1..pattern_char_count.len()],
-        );
-        if pattern_sets.is_some() && participated > 0 {
-            for mut p in pattern_sets.unwrap() {
-                for _ in 0..participated {
-                    p.push(idx);
-                }
-                possible_patterns.push(p);
-            }
-        }
-        new_char_count = add_counters(&new_char_count, &pattern_counter);
-        participated += 1;
-    }
-    if possible_patterns.is_empty() {
-        return None;
-    }
-    Some(possible_patterns)
-}
-
-fn get_possible_pattern_extentions(
-    cur_char_count: &HashMap<char, i64>,
-    design_char_count: &HashMap<char, i64>,
-    pattern_char_count: &Vec<HashMap<char, i64>>,
-) -> Vec<usize> {
-    let mut possible_extensions = Vec::new();
-    for (i, pattern_counter) in pattern_char_count.iter().enumerate() {
-        let mut new_char_count = cur_char_count.clone();
-        for (&c, v) in pattern_counter {
-            *new_char_count.entry(c).or_insert(0) += v;
-        }
-        if check_if_pattern_viable(design_char_count, &new_char_count) {
-            possible_extensions.push(i);
+fn filter_patterns(patterns: &[String]) -> Vec<String> {
+    let mut filtered_patterns = Vec::new();
+    let mut patterns_sorted = patterns.to_vec();
+    patterns_sorted.sort_by_key(|a| a.len());
+    for pattern in patterns_sorted {
+        if !basic_sub_pattern(&pattern, &filtered_patterns) {
+            filtered_patterns.push(pattern);
         }
     }
-    possible_extensions
+    filtered_patterns
 }
 
-fn get_char_count(s: &str) -> HashMap<char, i64> {
-    let mut counter = HashMap::new();
-    for ch in s.chars() {
-        *counter.entry(ch).or_insert(0) += 1;
-    }
-    counter
-}
-
-fn add_counters(
-    counter1: &HashMap<char, i64>,
-    counter2: &HashMap<char, i64>,
-) -> HashMap<char, i64> {
-    let mut new_counter = counter1.clone();
-    for (ch, count) in counter2 {
-        *new_counter.entry(*ch).or_insert(0) += count;
-    }
-    new_counter
-}
-
-fn is_design_possible(
-    design: &str,
-    available_patterns: &[String],
-    design_char_count: &HashMap<char, i64>,
-    pattern_char_count: &Vec<HashMap<char, i64>>,
-    pattern_viability: &mut Vec<bool>,
-) -> bool {
+fn basic_sub_pattern(design: &str, available_patterns: &[String]) -> bool {
     if design.len() == 0 {
         return true;
     }
-    for (i, pattern) in available_patterns.iter().enumerate() {
-        if !pattern_viability[i] {
-            continue;
-        } else if !check_if_pattern_viable(design_char_count, &pattern_char_count[i]) {
-            pattern_viability[i] = false;
-            continue;
-        }
+    for pattern in available_patterns.iter() {
         if design.starts_with(pattern) {
             let subdesign = &design[pattern.len()..design.len()];
-            if is_design_possible(
-                subdesign,
-                available_patterns,
-                design_char_count,
-                pattern_char_count,
-                pattern_viability,
-            ) {
+            if basic_sub_pattern(subdesign, available_patterns) {
                 return true;
             }
         }
@@ -169,16 +76,15 @@ fn is_design_possible(
     false
 }
 
-fn check_if_pattern_viable(
-    design_char_count: &HashMap<char, i64>,
-    pattern_char_count: &HashMap<char, i64>,
-) -> bool {
-    for (ch, count) in pattern_char_count {
-        if design_char_count.get(ch).unwrap_or(&0) < count {
-            return false;
+fn basic_solve(available_patterns: &[String], designs: &[String]) -> i64 {
+    let filted_patterns = filter_patterns(available_patterns);
+    let mut sum = 0;
+    for design in designs {
+        if basic_sub_pattern(design, &filted_patterns) {
+            sum += 1;
         }
     }
-    true
+    sum
 }
 
 fn parse_input(filename: &str) -> (Vec<String>, Vec<String>) {
